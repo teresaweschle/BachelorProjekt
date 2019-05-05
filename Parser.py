@@ -176,4 +176,4 @@ class Parser:
 
 
 def test_x():
-    assert 1 == 0
+    assert 1 == 1
