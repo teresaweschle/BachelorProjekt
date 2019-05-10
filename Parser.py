@@ -73,8 +73,8 @@ class Parser:
         if term.operator is not "BiImpl":
             return term
         else:
-            subterm1 = Term("Or", [term[0], Term("Not", [term[1]])])
-            subterm2 = Term("Or", [term[1], Term("Not", [term[0]])])
+            subterm1 = Term("Or", [term.parameters[0], Term("Not", [term.parameters[1]])])
+            subterm2 = Term("Or", [term.parameters[1], Term("Not", [term.parameters[0]])])
             replaced = Term("And", [subterm1, subterm2])
             return replaced
 
@@ -173,7 +173,3 @@ class Parser:
                 return term
         else:
             return term
-
-
-def test_x():
-    assert 1 == 1
