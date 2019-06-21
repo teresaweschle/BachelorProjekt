@@ -1,4 +1,6 @@
 import pytest
+import sys
+sys.setrecursionlimit(10000)
 class Term:
     def __init__(self, operator, parameters=None):
         self.parameters = parameters
@@ -25,27 +27,28 @@ class Parser:
             if formula[:2] == "Or":
                 formula = formula[3:len(formula) -1]
                 operator = "Or"
-            if formula[:3] == "And":
+            elif formula[:3] == "And":
                 formula = formula[4:len(formula) -1]
                 operator = "And"
-            if formula[:3] == "Not":
+            elif formula[:3] == "Not":
                 formula = formula[4:len(formula) -1]
                 operator = "Not"
-            if formula[:4] == "Impl":
+            elif formula[:4] == "Impl":
                 formula = formula[5:len(formula) -1]
                 operator = "Impl"
-            if formula[:6] == "BiImpl":
+            elif formula[:6] == "BiImpl":
                 formula = formula[7:len(formula) -1]
                 operator = "BiImpl"
             closed = True
             leftparameter = ""
             rightparameter = ""
+            paranthesisCount = 0
             for i in range(0, len(formula)):
              if formula[i] == "(":
-              closed = False
+                 paranthesisCount +=1
              elif formula[i]  == ")":
-              closed = True
-             if formula[i] == "," and closed:
+              paranthesisCount -= 1
+             if formula[i] == "," and paranthesisCount == 0:
                  rightparameter = formula[i+1:len(formula)]
                  break
              leftparameter += formula[i]
@@ -86,10 +89,7 @@ class Parser:
             if term.parameters[0].operator == "And":
                 replaced = Term("Or", [Term("Not", [term.parameters[0].parameters[0]]), Term("Not", [term.parameters[0].parameters[1]])])
             if term.parameters[0].operator == "Not":
-                if term.parameters[0].parameters[0].parameters == None:
-                    replaced = Term(term.parameters[0].parameters[0].operator)
-                else:
-                    replaced = Term(term.parameters[0].parameters[0].operator, term.parameters[0].parameters[0].parameters)
+                replaced = Term(term.parameters[0].parameters[0].operator, term.parameters[0].parameters[0].parameters)
         return replaced
 
     def isClause(self,term):
@@ -99,8 +99,10 @@ class Parser:
         elif term.operator == "Not":
             if term.parameters[0].operator not in operators:
              return True
+            else:
+                return False
         elif term.operator == "Or":
-            res = (isClause(term.parameters[0]) and isClause(term.parameters[1]))
+            res = (self.isClause(term.parameters[0]) and self.isClause(term.parameters[1]))
             return res
         else:
             return False
@@ -109,23 +111,23 @@ class Parser:
         if  term.operator is not "Or": #hack: in our case we only need Or
             return term
         else:
-            if term.parameters[0].operator is not "And" or term.parameters[1].operator is not "And":
+            if term.parameters[0].operator is not "And" and term.parameters[1].operator is not "And":
                 return term
             elif term.parameters[0].operator is "And" and term.parameters[1].operator is "And":
-                t1 = Term("Or" [term.parameters[0].parameters[0], term.parameters[1].parameters[0] ])
-                t2 = Term("Or" [term.parameters[0].parameters[0], term.parameters[1].parameters[1] ])
-                t3 = Term("Or" [term.parameters[0].parameters[1], term.parameters[1].parameters[0] ])
-                t4 = Term("Or" [term.parameters[0].parameters[1], term.parameters[1].parameters[1] ])
+                t1 = Term("Or", [term.parameters[0].parameters[0], term.parameters[1].parameters[0]])
+                t2 = Term("Or", [term.parameters[0].parameters[0], term.parameters[1].parameters[1]])
+                t3 = Term("Or", [term.parameters[0].parameters[1], term.parameters[1].parameters[0]])
+                t4 = Term("Or", [term.parameters[0].parameters[1], term.parameters[1].parameters[1]])
                 and1= Term("And", [t1,t2])
                 and2 = Term("And", [t3, t4])
                 return Term("And", [and1, and2])
             elif term.parameters[0].operator is "And" and term.parameters[1].operator is not "And":
-                t1 = Term("Or"[term.parameters[0].parameters[0], term.parameters[1]])
-                t2 = Term("Or"[term.parameters[0].parameters[1], term.parameters[1]])
+                t1 = Term("Or", [term.parameters[0].parameters[0], term.parameters[1]])
+                t2 = Term("Or", [term.parameters[0].parameters[1], term.parameters[1]])
                 return Term("And", [t1, t2])
-            elif term.parameters[0].operator is not "And" and term.parameters[1].operator is  "And":
-                t1 = Term("Or"[term.parameters[1].parameters[0], term.parameters[0]])
-                t2 = Term("Or"[term.parameters[1].parameters[1], term.parameters[0]])
+            elif term.parameters[0].operator is not "And" and term.parameters[1].operator is "And":
+                t1 = Term("Or", [term.parameters[1].parameters[0], term.parameters[0]])
+                t2 = Term("Or", [term.parameters[1].parameters[1], term.parameters[0]])
                 return Term("And", [t1, t2])
 
 
@@ -134,20 +136,20 @@ class Parser:
             if self.isClause(term.parameters[0]) and self.isClause(term.parameters[1]):
                 return term
             else:
-                parameter0 = self.convertToCNF(self, term.parameters[0])
-                parameter1 = self.convertToCNF(self, term.parameters[1])
+                parameter0 = self.convertToCNF(term.parameters[0])
+                parameter1 = self.convertToCNF(term.parameters[1])
                 result = Term("Or", [parameter0, parameter1])
                 result = self.apply_DistributiveLaw(result)
                 return result
         elif term.operator == "Impl":
-            parameter0 = self.convertToCNF(self, term.parameters[0])
-            parameter1 = self.convertToCNF(self, term.parameters[1])
+            parameter0 = self.convertToCNF(term.parameters[0])
+            parameter1 = self.convertToCNF(term.parameters[1])
             result = Term("Impl", [parameter0, parameter1])
             result = self.replace_implication(result)
-            return result
+            return self.convertToCNF(result)
         elif term.operator == "BiImpl":
-            parameter0 = self.convertToCNF(self, term.parameters[0])
-            parameter1 = self.convertToCNF(self, term.parameters[1])
+            parameter0 = self.convertToCNF(term.parameters[0])
+            parameter1 = self.convertToCNF(term.parameters[1])
             result = Term("BiImpl", [parameter0, parameter1])
             result = self.replace_biimplication(result)
             return result
@@ -155,21 +157,99 @@ class Parser:
             if self.isClause(term.parameters[0]) and self.isClause(term.parameters[1]):
                 return term
             else:
-                parameter0 = self.convertToCNF(self, term.parameters[0])
-                parameter1 = self.convertToCNF(self, term.parameters[1])
+                parameter0 = self.convertToCNF(term.parameters[0])
+                parameter1 = self.convertToCNF(term.parameters[1])
                 result = Term("And", [parameter0, parameter1])
                 return result
-        elif term.operstor == "Not":
-            if term.parameters[0] ==  "And" or term.parameters[0] == "Or":
+        elif term.operator == "Not":
+            if term.parameters[0].operator == "And" or term.parameters[0].operator == "Or":
                 result = self.de_Morgan(term)
                 result= self.convertToCNF(result)
                 return result
-            elif term.parameter[0] == "Not":
-                return term.parameters[0].parameters[0]
-            elif term.parameters[0] == "Impl":
+            elif term.parameters[0].operator == "Not":
+                return self.convertToCNF(term.parameters[0].parameters[0])
+            elif term.parameters[0].operator == "Impl":
                 result = Term("And", [term.parameters[0].parameters[0], Term("Not", [term.parameters[0].parameters[1]]) ])
                 return self.convertToCNF(result)
+            elif term.parameters[0].operator == "BiImpl":
+                rep = self.replace_biimplication(term.parameters[0])
+                t1 = Term("Not", [rep.parameters[0]])
+                t2 = Term("Not", [rep.parameters[1]])
+                res = Term ("Or", [t1, t2])
+                return self.convertToCNF(res)
+
             else:
                 return term
         else:
             return term
+    #def getNumVariablesandClauses(self,term):
+    #def buildMas(self, formula):
+        formula = self.create_term(formula)
+        formula = self.convertToCNF(formula)
+
+    def buildString(self,term):
+        output = ""
+        if term.operator == "Or":
+            for x in term.parameters:
+                if x.operator == "Or":
+                    res = self.buildString(x)
+                    output += res
+                elif x.operator == "Not":
+                    variable = x.parameters[0].operator
+                    res = "-" + variable
+                    output += res
+                    output += " "
+                else:
+                    output += x.operator
+                    output += " "
+        elif term.operator == "And":
+            res1 = self.buildString(term.parameters[0])
+            res2 = self.buildString(term.parameters[1])
+            output += res1 + "\n"
+            output += res2
+        else:
+            if term.operator == "Not":
+                variable = term.parameters[0].operator
+                res = "-" + variable
+                output += res
+            else:
+                output += term.operator
+        return output
+
+    def createDMACS(self,term):
+        dict = {}
+        numClauses = 1
+        numVariables = 0
+        currentNumber = 1
+        term = self.buildString(term)
+        for x in term:
+                if x == "\n":
+                    numClauses += 1
+                elif x == "-" or x == " ":
+                    continue
+                else:
+                    if x not in dict:
+                        dict[x] = currentNumber
+                        currentNumber += 1
+                        numVariables += 1
+        dmacs = "p cnf " +str(numVariables) + " " + str(numClauses) +"\n"
+        for y in term:
+            if y in dict:
+                y = dict[y]
+            dmacs += str(y)
+        return dmacs
+
+
+
+
+    def ConvertFormulaToDMACS(formula) :
+        parser = Parser()
+        formulaTerm = parser.create_term(formula)
+        formulaTermInCnf = parser.convertToCNF(formulaTerm)
+        return parser.createDMACS(formulaTermInCnf)
+
+
+
+
+
+

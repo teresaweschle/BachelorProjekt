@@ -42,6 +42,30 @@ def test_create_term():
     assert x.parameters[0].operator == "Not"
     assert x.parameters[1].operator == "n"
     assert len(x.parameters[0].parameters) == 1
+    x = "Not(Or(a,n))"
+    x = p.create_term(x)
+    assert x.parameters[0].operator == "Or"
+    assert x.operator == "Not"
+    x = "Not(And(a,n))"
+    x = p.create_term(x)
+    assert x.parameters[0].operator == "And"
+    assert x.operator == "Not"
+    x = "Not(Impl(a,n))"
+    x = p.create_term(x)
+    assert x.parameters[0].operator == "Impl"
+    assert x.operator == "Not"
+    x= "Or(And(a,b),And(x,y))"
+    x = p.create_term(x)
+    assert x.operator == "Or"
+    assert x.parameters[0].operator == "And"
+    assert x.parameters[1].operator == "And"
+    x = "Or(And(Not(a),b),And(x,y))"
+    x = p.create_term(x)
+    assert x.operator == "Or"
+    assert x.parameters[0].operator == "And"
+    assert x.parameters[1].operator == "And"
+
+
 
 def test_replace_implication ():
     x = "Impl(a,b)"
@@ -90,9 +114,119 @@ def test_de_Morgan():
     assert x.parameters[1].operator == "Not"
     assert x.parameters[0].parameters[0].operator == "a"
     assert x.parameters[1].parameters[0].operator == "b"
-    x = ("Not(Impl(a,b))")
+    x = "Not(Impl(a,b))"
     x = y.create_term(x)
+    assert x.operator == "Not"
     x = y.de_Morgan(x)
     assert x.operator == "Not"
     assert x.parameters[0].operator == "Impl"
+    x = "Not(Not(a))"
+    x = y.create_term(x)
+    x = y.de_Morgan(x)
+    assert x.operator == "a"
+
+def test_isClause():
+    x = "Not(Or(a,b))"
+    y = Parser()
+    x = y.create_term(x)
+    b = y.isClause(x)
+    assert False == b
+    x = "And(Or(a,b))"
+    x = y.create_term(x)
+    b = y.isClause(x)
+    assert False == b
+    x = "Or(Or(a,b),v)"
+    x = y.create_term(x)
+    b = y.isClause(x)
+    assert True == b
+    x = "Or(Or(And(a,b)),v)"
+    x = y.create_term(x)
+    b = y.isClause(x)
+    assert False == b
+
+def test_applyDistributiveLaw():
+    y= Parser()
+    x = "Or(And(a,b),c)"
+    x = y.create_term(x)
+    x = y.apply_DistributiveLaw(x)
+    assert x.operator == "And"
+    assert x.parameters[0].operator == "Or"
+    assert x.parameters[0].parameters[0].operator == "a"
+    assert x.parameters[0].parameters[1].operator == "c"
+    x = "Or(c,And(a,b))"
+    x = y.create_term(x)
+    x = y.apply_DistributiveLaw(x)
+    assert x.operator == "And"
+    assert x.parameters[0].operator == "Or"
+    assert x.parameters[0].parameters[0].operator == "a"
+    assert x.parameters[0].parameters[1].operator == "c"
+    x = "Or(And(a,b),And(Impl(a,b),c))"
+    x = y.create_term(x)
+    x = y.apply_DistributiveLaw(x)
+    assert x.operator == "And"
+    assert x.parameters[0].operator == "And"
+    assert x.parameters[0].parameters[0].operator == "Or"
+    assert x.parameters[0].parameters[1].operator == "Or"
+    assert x.parameters[1].parameters[0].operator == "Or"
+    assert x.parameters[1].parameters[1].operator == "Or"
+    assert x.parameters[0].parameters[0].parameters[0].operator == "a"
+    assert x.parameters[0].parameters[0].parameters[1].operator == "Impl"
+    assert x.parameters[0].parameters[1].parameters[0].operator == "a"
+    assert x.parameters[0].parameters[1].parameters[1].operator == "c"
+    assert x.parameters[1].parameters[0].parameters[0].operator == "b"
+    assert x.parameters[1].parameters[0].parameters[1].operator == "Impl"
+    assert x.parameters[1].parameters[1].parameters[0].operator == "b"
+    assert x.parameters[1].parameters[1].parameters[1].operator == "c"
+
+def test_convertToCNF():
+    y = Parser()
+    x = "a"
+    x = y.create_term(x)
+    x = y.convertToCNF(x)
+    assert x.operator == "a"
+    x = "Or(And(a,b),Impl(c,d))"
+    x = y.create_term(x)
+    x = y.convertToCNF(x)
+    assert x.operator == "And"
+    assert x.parameters[0].operator == "Or"
+    assert x.parameters[1].operator == "Or"
+    assert x.parameters[0].parameters[0].operator == "a"
+    assert x.parameters[0].parameters[1].operator == "Or"
+    x = "Not(And(a,b))"
+    x = y.create_term(x)
+    x = y.convertToCNF(x)
+    assert x.operator == "Or"
+    assert x.parameters[0].operator == "Not"
+    assert x.parameters[0].parameters[0].operator == "a"
+    assert x.parameters[1].operator == "Not"
+    assert x.parameters[1].parameters[0].operator == "b"
+    x = "Not(Impl(a,b))"
+    x = y.create_term(x)
+    x = y.convertToCNF(x)
+    assert x.operator == "And"
+    assert x.parameters[0].operator == "a"
+    assert x.parameters[1].operator == "Not"
+    assert x.parameters[1].parameters[0].operator == "b"
+    x = "Not(Not(Impl(a,b)))"
+    x = y.create_term(x)
+    x = y.convertToCNF(x)
+    assert x.operator == "Or"
+    assert x.parameters[0].operator == "Not"
+    assert x.parameters[0].parameters[0].operator == "a"
+    assert x.parameters[1].operator == "b"
+
+
+def test_buildString():
+    x = "Or(And(a,b),And(x,y))"
+    y= Parser()
+    x= y.create_term(x)
+    x = y.convertToCNF(x)
+    x = y.buildString(x)
+    assert x[0] == "a"
+
+
+
+
+
+
 
