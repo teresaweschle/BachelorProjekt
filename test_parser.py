@@ -96,7 +96,7 @@ def test_de_Morgan():
     x=("Not(Or(a,b))")
     y =Parser()
     x = y.create_term(x)
-    x = y.de_Morgan(x)
+    x = y.de_morgan(x)
     assert x.operator == "And"
     assert x.parameters[0].operator == "Not"
     assert x.parameters[1].operator == "Not"
@@ -104,11 +104,11 @@ def test_de_Morgan():
     assert x.parameters[1].parameters[0].operator == "b"
     x = "Not(Not(a))"
     x = y.create_term(x)
-    x = y.de_Morgan(x)
+    x = y.de_morgan(x)
     assert x.operator == "a"
     x = ("Not(And(a,b))")
     x = y.create_term(x)
-    x = y.de_Morgan(x)
+    x = y.de_morgan(x)
     assert x.operator == "Or"
     assert x.parameters[0].operator == "Not"
     assert x.parameters[1].operator == "Not"
@@ -117,52 +117,52 @@ def test_de_Morgan():
     x = "Not(Impl(a,b))"
     x = y.create_term(x)
     assert x.operator == "Not"
-    x = y.de_Morgan(x)
+    x = y.de_morgan(x)
     assert x.operator == "Not"
     assert x.parameters[0].operator == "Impl"
     x = "Not(Not(a))"
     x = y.create_term(x)
-    x = y.de_Morgan(x)
+    x = y.de_morgan(x)
     assert x.operator == "a"
 
 def test_isClause():
     x = "Not(Or(a,b))"
     y = Parser()
     x = y.create_term(x)
-    b = y.isClause(x)
+    b = y.is_clause(x)
     assert False == b
     x = "And(Or(a,b))"
     x = y.create_term(x)
-    b = y.isClause(x)
+    b = y.is_clause(x)
     assert False == b
     x = "Or(Or(a,b),v)"
     x = y.create_term(x)
-    b = y.isClause(x)
+    b = y.is_clause(x)
     assert True == b
     x = "Or(Or(And(a,b)),v)"
     x = y.create_term(x)
-    b = y.isClause(x)
+    b = y.is_clause(x)
     assert False == b
 
 def test_applyDistributiveLaw():
     y= Parser()
     x = "Or(And(a,b),c)"
     x = y.create_term(x)
-    x = y.apply_DistributiveLaw(x)
+    x = y.apply_distributive_law(x)
     assert x.operator == "And"
     assert x.parameters[0].operator == "Or"
     assert x.parameters[0].parameters[0].operator == "a"
     assert x.parameters[0].parameters[1].operator == "c"
     x = "Or(c,And(a,b))"
     x = y.create_term(x)
-    x = y.apply_DistributiveLaw(x)
+    x = y.apply_distributive_law(x)
     assert x.operator == "And"
     assert x.parameters[0].operator == "Or"
     assert x.parameters[0].parameters[0].operator == "a"
     assert x.parameters[0].parameters[1].operator == "c"
     x = "Or(And(a,b),And(Impl(a,b),c))"
     x = y.create_term(x)
-    x = y.apply_DistributiveLaw(x)
+    x = y.apply_distributive_law(x)
     assert x.operator == "And"
     assert x.parameters[0].operator == "And"
     assert x.parameters[0].parameters[0].operator == "Or"
@@ -182,11 +182,11 @@ def test_convertToCNF():
     y = Parser()
     x = "a"
     x = y.create_term(x)
-    x = y.convertToCNF(x)
+    x = y.convert_to_cnf(x)
     assert x.operator == "a"
     x = "Or(And(a,b),Impl(c,d))"
     x = y.create_term(x)
-    x = y.convertToCNF(x)
+    x = y.convert_to_cnf(x)
     assert x.operator == "And"
     assert x.parameters[0].operator == "Or"
     assert x.parameters[1].operator == "Or"
@@ -194,7 +194,7 @@ def test_convertToCNF():
     assert x.parameters[0].parameters[1].operator == "Or"
     x = "Not(And(a,b))"
     x = y.create_term(x)
-    x = y.convertToCNF(x)
+    x = y.convert_to_cnf(x)
     assert x.operator == "Or"
     assert x.parameters[0].operator == "Not"
     assert x.parameters[0].parameters[0].operator == "a"
@@ -202,14 +202,14 @@ def test_convertToCNF():
     assert x.parameters[1].parameters[0].operator == "b"
     x = "Not(Impl(a,b))"
     x = y.create_term(x)
-    x = y.convertToCNF(x)
+    x = y.convert_to_cnf(x)
     assert x.operator == "And"
     assert x.parameters[0].operator == "a"
     assert x.parameters[1].operator == "Not"
     assert x.parameters[1].parameters[0].operator == "b"
     x = "Not(Not(Impl(a,b)))"
     x = y.create_term(x)
-    x = y.convertToCNF(x)
+    x = y.convert_to_cnf(x)
     assert x.operator == "Or"
     assert x.parameters[0].operator == "Not"
     assert x.parameters[0].parameters[0].operator == "a"
@@ -220,8 +220,8 @@ def test_buildString():
     x = "Or(And(a,b),And(x,y))"
     y= Parser()
     x= y.create_term(x)
-    x = y.convertToCNF(x)
-    x = y.buildString(x)
+    x = y.convert_to_cnf(x)
+    x = y.build_string(x)
     assert x[0] == "a"
 
 

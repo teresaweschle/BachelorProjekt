@@ -2,10 +2,12 @@ from Parser import Parser
 from RandomTermGenerator import RandomTermGenerator
 from TermComparator import TermComparator
 
-p = Parser()
-comparator = TermComparator()
-for i in range(0, 100):
-    term = RandomTermGenerator.generate_random_term(5, 10)
-    termCnf = p.convertToCNF(term)
 
-    assert comparator.compare_terms(term, termCnf)
+def test_parser_hardcore():
+    p = Parser()
+    comparator = TermComparator()
+    for i in range(0, 100):
+        term = RandomTermGenerator.generate_random_term(6, 10)
+        term_cnf = p.convert_to_cnf(term)
+
+        assert comparator.compare_terms(term, term_cnf)
