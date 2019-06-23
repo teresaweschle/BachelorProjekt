@@ -152,7 +152,7 @@ class Parser:
             parameter1 = self.convertToCNF(term.parameters[1])
             result = Term("BiImpl", [parameter0, parameter1])
             result = self.replace_biimplication(result)
-            return result
+            return self.convertToCNF(result)
         elif term.operator == "And":
             if self.isClause(term.parameters[0]) and self.isClause(term.parameters[1]):
                 return term
